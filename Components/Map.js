@@ -1,22 +1,30 @@
 import React from 'react'
-import { StyleSheet, View, TouchableOpacity, Text, SafeAreaView, Dimensions} from 'react-native'
+import { StyleSheet, View, TouchableOpacity, ActivityIndicator, SafeAreaView, Dimensions, Text} from 'react-native'
 import MapView from 'react-native-maps'
+import { connect } from 'react-redux'
+
 
 const WIDTH = Dimensions.get('window').width
 const HEIGHT = Dimensions.get('window').height
 
 class Map extends React.Component{
+    
     constructor(props){
         super(props)
 
         //Setting base location 
         this.state = {
             region: {
-                latitude: 43.60, // Those will be replaced by the user's location
-                longitude: 1.44, //
+                latitude: this.props.locationStore.latitude,
+                longitude: this.props.locationStore.longitude,
 
-                latitudeDelta: 0.001,
-                longitudeDelta: 0.001,
+                latitudeDelta: 12,
+                longitudeDelta: 12,
+            },
+            showsUser: false,
+            loading: {
+                show: true,
+                message: "Recherche de la localisation..."
             }
         }
 
@@ -33,7 +41,8 @@ class Map extends React.Component{
             @Return : 
                 Void
         */
-        this._animateCamera(2000)
+        this._animateCamera(3000)
+        this.setState({showsUser: true})
     }
 
     _initCamera() {
@@ -53,18 +62,40 @@ class Map extends React.Component{
                 longitude: this.state.region.longitude,
             },
             heading: 2,
-            altitude: 8000,
+            altitude: 100000,
             zoom: 0,
         }
     }
 
-    async _animateCamera(duration = 7000) {
+    showsLoading() {
+        /*
+            Funciton rendering the loading screen with the informations available in the store loadingStore
+            
+            @Params:
+                None
+            
+            @Return :
+                React Component: Loading screen
+        */
+        if (this.props.loadingStore.show) {
+            return (
+                <View style={styles.loading}>
+                    <ActivityIndicator style={styles.activityIndicator} size='small' />
+                    <Text style={styles.loadingInfoText} >{this.props.loadingStore.message}</Text>
+                </View>
+            )
+        }
+    }
+
+    async _animateCamera(duration = 7000, longitude = this.props.locationStore.longitude, latitude = this.props.locationStore.latitude) {
         /*
             Function doing a little animation when we launch the app and when we center the
             camera at the user's location
 
             @Params : 
                 duration? : Duration of the animation (milliseconds)
+                longitude? : Longitude to go with the camera
+                latitude? : Latitude to go with the camera
             
             @Return :
                 Void
@@ -74,19 +105,36 @@ class Map extends React.Component{
         //Setting camera's parameters
         camera.pitch = 65;
         camera.heading += 179;
-        camera.altitude = 30;
+        camera.altitude = 400;
         camera.center = {
-            latitude: this.state.region.latitude,
-            longitude: this.state.region.longitude,
+            latitude: latitude,
+            longitude: longitude,
         }
 
         //Do the animation based on the new parameters
         this.map.animateCamera(camera, { duration: duration });   
       }
 
-    componentDidMount() {
-        //Animation called when the component is mounted (when the application is ready)
-        this._animateCamera()
+    componentDidUpdate() {
+        //Here we check if our location is null, if it is we are waiting to get the location
+        //When the props changes, React update the component and we get the location
+        if(this.props.location != null){
+
+            //If we did not already move the camera
+            if(this.props.locationStore.longitude != this.props.location.coords.longitude && 
+              this.props.locationStore.latitude != this.props.location.coords.latitude) {
+
+                //We change the location in the store and animate the deplacement to the location
+                this.props.dispatch({type: "CHANGE_LOCATION", value: this.props.location.coords})
+                this._animateCamera(11000, this.props.location.coords.longitude, this.props.location.coords.latitude)
+                setTimeout(() => {
+                    this.setState({showsUser: true}) 
+                }, 11100)
+
+                //Hiding the loading bar
+                this.props.dispatch({type: "HIDING_LOADING_MESSAGE", value: {}})
+            }
+        }
     }
 
     render(){
@@ -99,6 +147,9 @@ class Map extends React.Component{
                         initialRegion={this.state.region}
                         showsCompass={false}
                         initialCamera={this._initCamera()}
+                        userInterfaceStyle="dark"
+                        showsPointsOfInterest={false}
+                        showsUserLocation={this.state.showsUser}
                     />
                     <View style={styles.topButtons}>
                         <TouchableOpacity style={styles.goToMessages} onPress={() => {this.props.goToPage(0)}}/>
@@ -108,7 +159,7 @@ class Map extends React.Component{
                         <TouchableOpacity style={styles.recenterButton} onPress={() => {this.centerCamera()}}/>
                         <TouchableOpacity style={styles.addPlaceButton} />
                     </View>
-                    
+                    {this.showsLoading()}
                 </SafeAreaView>
             </View>
         )
@@ -175,7 +226,33 @@ const styles = StyleSheet.create({
         height: 70,
         width: 70,
         marginTop: 15,
+    },
+
+    loading: {
+        position: 'absolute',
+        bottom: 50,
+        left: 10,
+        backgroundColor: "rgba(179, 176, 170, 0.7)",
+        flexDirection: "row",  
+        padding: 10,
+        borderRadius: 20,
+    },
+
+    activityIndicator: {
+        marginRight: 10,
+    },
+
+    loadingInfoText: {
+
     }
 })
 
-export default Map
+const mapStateToProps = (state) => {
+    console.log(state)
+    return {
+        locationStore: state.changeLocation.location,
+        loadingStore: state.changeLoading,
+    }
+}
+
+export default connect(mapStateToProps)(Map)

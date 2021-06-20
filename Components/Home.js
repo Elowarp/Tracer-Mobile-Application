@@ -1,6 +1,6 @@
 //Import libs
 import React from 'react'
-import { Dimensions, ScrollView, View, StyleSheet } from 'react-native'
+import { Dimensions, ScrollView, View, StyleSheet, StatusBar } from 'react-native'
 
 //Import views
 import Map from './Map'
@@ -62,6 +62,7 @@ class Home extends React.Component{
             We give them goToPage function to slide between views with a button (it can be useful for certain person)
         */
         return (
+            <View style={{flex: 1, marginTop: StatusBar.currentHeight}}>
             <ScrollView
                 ref={ref => (this.ScrollView = ref)}
                 horizontal={true} 
@@ -76,12 +77,13 @@ class Home extends React.Component{
                     goToPage={this.goToPage}
                 />
                 <Map 
-                    goToPage={this.goToPage}
+                    goToPage={this.goToPage} location={this.props.location}
                 />
                 <Messages 
                     goToPage={this.goToPage}
                 />
             </ScrollView>
+            </View>
         )
     }
 }
