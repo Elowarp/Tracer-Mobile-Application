@@ -1,5 +1,5 @@
 //Import libs
-import React from 'react'
+import React, {useState, useEffect} from 'react'
 import { Dimensions, ScrollView, View, StyleSheet, StatusBar } from 'react-native'
 
 //Import views
@@ -77,7 +77,7 @@ class Home extends React.Component{
                     goToPage={this.goToPage}
                 />
                 <Map 
-                    goToPage={this.goToPage} location={this.props.location}
+                    goToPage={this.goToPage} location={this.props.location} navigation={this.props.navigation}
                 />
                 <Messages 
                     goToPage={this.goToPage}

@@ -1,7 +1,9 @@
 import React from 'react'
 import { StyleSheet, View, TouchableOpacity, ActivityIndicator, SafeAreaView, Dimensions, Text} from 'react-native'
-import MapView from 'react-native-maps'
+import MapView, {Marker, Callout} from 'react-native-maps'
 import { connect } from 'react-redux'
+import { search } from '../API/TracerAPI'
+import * as Location from 'expo-location';
 
 
 const WIDTH = Dimensions.get('window').width
@@ -25,14 +27,33 @@ class Map extends React.Component{
             loading: {
                 show: true,
                 message: "Recherche de la localisation..."
-            }
+            },
+            spots: []
         }
 
+        //Reference of the map
         this.map = React.createRef();
+
+        //Getting the user's location
+        this.getLocation().then((location) => {
+            //Searching point around the user
+            search(location.coords.longitude, location.coords.latitude).then(response => {
+                this.props.dispatch({type: "REFRESH_SPOTS", value: response.Spots})
+            })
+
+            //Animation of the camera : Zooming in to the user
+            this._animateCamera(11000, location.coords.longitude, location.coords.latitude)
+            setTimeout(() => {
+                this.setState({showsUser: true}) 
+            }, 11100)
+
+            //Hiding the loading bar
+            this.props.dispatch({type: "HIDING_LOADING_MESSAGE", value: {}})
+        })
     }
 
     centerCamera() {
-        /*
+        /**
             Function called when we want to center the camera on the user
             
             @Params :
@@ -43,6 +64,7 @@ class Map extends React.Component{
         */
         this._animateCamera(3000)
         this.setState({showsUser: true})
+        
     }
 
     _initCamera() {
@@ -88,7 +110,7 @@ class Map extends React.Component{
     }
 
     async _animateCamera(duration = 7000, longitude = this.props.locationStore.longitude, latitude = this.props.locationStore.latitude) {
-        /*
+        /**
             Function doing a little animation when we launch the app and when we center the
             camera at the user's location
 
@@ -113,28 +135,59 @@ class Map extends React.Component{
 
         //Do the animation based on the new parameters
         this.map.animateCamera(camera, { duration: duration });   
-      }
+    }
 
-    componentDidUpdate() {
-        //Here we check if our location is null, if it is we are waiting to get the location
-        //When the props changes, React update the component and we get the location
-        if(this.props.location != null){
+    async getLocation(){
+        /**
+         * Function getting the user's location
+         */
 
-            //If we did not already move the camera
-            if(this.props.locationStore.longitude != this.props.location.coords.longitude && 
-              this.props.locationStore.latitude != this.props.location.coords.latitude) {
-
-                //We change the location in the store and animate the deplacement to the location
-                this.props.dispatch({type: "CHANGE_LOCATION", value: this.props.location.coords})
-                this._animateCamera(11000, this.props.location.coords.longitude, this.props.location.coords.latitude)
-                setTimeout(() => {
-                    this.setState({showsUser: true}) 
-                }, 11100)
-
-                //Hiding the loading bar
-                this.props.dispatch({type: "HIDING_LOADING_MESSAGE", value: {}})
-            }
+        console.info("Getting location authorization...")
+        //Asking for the permission
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+            console.log('Permission to access location was denied');
+            return;
         }
+        
+        console.info("Getting location...")
+        //Getting the location
+        let location = await Location.getCurrentPositionAsync({})
+            .catch(error => {
+                console.error("Error during getting user's location")
+                console.error(error)
+            });
+
+        //Changing user's location in the store
+        this.props.dispatch({type: "CHANGE_LOCATION", value: location.coords})
+        console.info("Got location")
+
+        return location
+
+    }
+
+    _mapMarker() {
+        /**
+         * Function returning marker on the map where spots are
+         */
+        if(this.props.spotsStore.length > 0){
+            return this.props.spotsStore[0].map((spot) => 
+                <Marker
+                    key={spot.id}
+                    coordinate={{longitude: spot.longitude, latitude: spot.latitude}}
+                    title={spot.title}
+                >
+                    
+                    <Callout>
+                        <Text>Titre : {spot.title}</Text>
+                        <Text>Sport : {spot.sport__title}</Text>
+                    </Callout>
+                </Marker>
+            )
+        } else {
+            return (<View></View>)
+        }
+        
     }
 
     render(){
@@ -147,17 +200,19 @@ class Map extends React.Component{
                         initialRegion={this.state.region}
                         showsCompass={false}
                         initialCamera={this._initCamera()}
-                        userInterfaceStyle="dark"
                         showsPointsOfInterest={false}
                         showsUserLocation={this.state.showsUser}
-                    />
+                        annotations={this.state.spots}
+                    >
+                        {this._mapMarker()}
+                    </MapView>
                     <View style={styles.topButtons}>
                         <TouchableOpacity style={styles.goToMessages} onPress={() => {this.props.goToPage(0)}}/>
                         <TouchableOpacity style={styles.goToFavorites} onPress={() => {this.props.goToPage(2)}}/>   
                     </View>
                     <View style={styles.bottomButtons}>
                         <TouchableOpacity style={styles.recenterButton} onPress={() => {this.centerCamera()}}/>
-                        <TouchableOpacity style={styles.addPlaceButton} />
+                        <TouchableOpacity style={styles.addPlaceButton} onPress={() => {this.props.navigation.navigate('Ajouter un spot')}}/>
                     </View>
                     {this.showsLoading()}
                 </SafeAreaView>
@@ -242,16 +297,19 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
 
-    loadingInfoText: {
-
+    marker:{
+        width: 30,
+        height: 30,
+        backgroundColor: "white",
+        borderRadius: 100,
     }
 })
 
 const mapStateToProps = (state) => {
-    console.log(state)
     return {
         locationStore: state.changeLocation.location,
         loadingStore: state.changeLoading,
+        spotsStore: state.spots
     }
 }
 

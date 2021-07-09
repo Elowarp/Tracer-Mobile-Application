@@ -14,7 +14,7 @@ function changeLocation(state = initialState, action){
                 ...state,
                 location: action.value,
             }
-
+            
             return nextState || state
         
         default: 
