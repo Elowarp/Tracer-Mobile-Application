@@ -38,6 +38,7 @@ class Map extends React.Component{
         this.getLocation().then((location) => {
             //Searching point around the user
             search(location.coords.longitude, location.coords.latitude).then(response => {
+		console.log(response)
                 this.props.dispatch({type: "REFRESH_SPOTS", value: response.Spots})
             })
 
