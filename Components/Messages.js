@@ -18,8 +18,12 @@ class Messages extends React.Component{
             return (
                 <View>
                     <Text style={styles.text}>Connected</Text>
+                    <Text>
+                        Cette page est encore en développement... Plus tard elle servira de messagerie entre les différents comptes Tracer ou 
+                        de page affichant son profil Tracer  ¯\_(ツ)_/¯
+                    </Text>
                     <TouchableOpacity onPress={() => {this._logout()}}>
-                        <Text>Se déconnecter :(</Text>
+                        <Text style={{...styles.text, margin: 35}}>Se déconnecter :(</Text>
                     </TouchableOpacity>
                 </View>
             )
@@ -54,6 +58,12 @@ const styles = StyleSheet.create({
         flex: 1,
         width: WIDTH,
         height: HEIGHT,
+    },
+
+    text: {
+        textAlign: "center",
+        justifyContent: 'center',
+        fontWeight: "900",
     },
 })
 

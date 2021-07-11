@@ -1,5 +1,5 @@
 import React from 'react'
-import { StyleSheet, View, TouchableOpacity, ActivityIndicator, SafeAreaView, Dimensions, Text} from 'react-native'
+import { StyleSheet, View, TouchableOpacity, ActivityIndicator, SafeAreaView, Dimensions, Text, Image } from 'react-native'
 import MapView, {Marker, Callout} from 'react-native-maps'
 import { connect } from 'react-redux'
 import { search } from '../API/TracerAPI'
@@ -42,10 +42,10 @@ class Map extends React.Component{
             })
 
             //Animation of the camera : Zooming in to the user
-            this._animateCamera(11000, location.coords.longitude, location.coords.latitude)
+            this._animateCamera(7000, location.coords.longitude, location.coords.latitude)
             setTimeout(() => {
                 this.setState({showsUser: true}) 
-            }, 11100)
+            }, 7000)
 
             //Hiding the loading bar
             this.props.dispatch({type: "HIDING_LOADING_MESSAGE", value: {}})
@@ -85,7 +85,7 @@ class Map extends React.Component{
             },
             heading: 2,
             altitude: 100000,
-            zoom: 0,
+            zoom: 5,
         }
     }
 
@@ -109,7 +109,7 @@ class Map extends React.Component{
         }
     }
 
-    async _animateCamera(duration = 7000, longitude = this.props.locationStore.longitude, latitude = this.props.locationStore.latitude) {
+    async _animateCamera(duration = 4000, longitude = this.props.locationStore.longitude, latitude = this.props.locationStore.latitude) {
         /**
             Function doing a little animation when we launch the app and when we center the
             camera at the user's location
@@ -128,6 +128,7 @@ class Map extends React.Component{
         camera.pitch = 65;
         camera.heading += 179;
         camera.altitude = 400;
+        camera.zoom = 19;
         camera.center = {
             latitude: latitude,
             longitude: longitude,
@@ -190,6 +191,10 @@ class Map extends React.Component{
         
     }
 
+    _changeUserLocation(coords){
+        this.props.dispatch({type: "CHANGE_LOCATION", value: coords.coordinate})
+    }
+
     render(){
         return(
             <View style={styles.container}>
@@ -202,17 +207,26 @@ class Map extends React.Component{
                         initialCamera={this._initCamera()}
                         showsPointsOfInterest={false}
                         showsUserLocation={this.state.showsUser}
-                        annotations={this.state.spots}
+                        onUserLocationChange={(coords) => {this._changeUserLocation(coords.nativeEvent)}}
+                        showsIndoors={false}
+                        showsMyLocationButton={false}
+                        toolbarEnabled={false}
+                        mapType={"hybrid"}
                     >
                         {this._mapMarker()}
                     </MapView>
                     <View style={styles.topButtons}>
-                        <TouchableOpacity style={styles.goToMessages} onPress={() => {this.props.goToPage(0)}}/>
-                        <TouchableOpacity style={styles.goToFavorites} onPress={() => {this.props.goToPage(2)}}/>   
+                        <TouchableOpacity style={styles.goToFavorites} onPress={() => {this.props.goToPage(1)}}>
+                            <Image source={require('../assets/Messages.png')} style={styles.icon}/>
+                        </TouchableOpacity>   
                     </View>
                     <View style={styles.bottomButtons}>
-                        <TouchableOpacity style={styles.recenterButton} onPress={() => {this.centerCamera()}}/>
-                        <TouchableOpacity style={styles.addPlaceButton} onPress={() => {this.props.navigation.navigate('Ajouter un spot')}}/>
+                        <TouchableOpacity style={styles.recenterButton} onPress={() => {this.centerCamera()}}>
+                            <Image source={require('../assets/Center.png')} style={styles.icon}/>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.addPlaceButton} onPress={() => {this.props.navigation.navigate('Ajouter un spot')}}>
+                            <Image source={require('../assets/AddSpot.png')} style={styles.addSpotIcon}/>
+                        </TouchableOpacity>
                     </View>
                     {this.showsLoading()}
                 </SafeAreaView>
@@ -261,16 +275,16 @@ const styles = StyleSheet.create({
     goToMessages: {
         borderRadius: 100,
         backgroundColor: 'grey',
-        height: 53,
-        width: 53,
+        height: 50,
+        width: 50,
         position: 'absolute'
     },
 
     goToFavorites: {
         borderRadius: 100,
         backgroundColor: 'grey',
-        height: 53,
-        width: 53,
+        height: 50,
+        width: 50,
         position: 'absolute',
         right: 0
     },
@@ -297,11 +311,25 @@ const styles = StyleSheet.create({
         marginRight: 10,
     },
 
-    marker:{
+    marker: {
         width: 30,
         height: 30,
         backgroundColor: "white",
         borderRadius: 100,
+    },
+
+    icon: {
+        width: 35,
+        height: 35,
+        alignSelf: "center",
+        marginVertical: 7.5
+    },
+
+    addSpotIcon:{
+        width: 35,
+        height: 35,
+        alignSelf: "center",
+        marginVertical: 17.5
     }
 })
 

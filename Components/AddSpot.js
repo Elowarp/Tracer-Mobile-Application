@@ -1,34 +1,45 @@
 import React from 'react'
-import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native'
+import { StyleSheet, View, Text, TextInput, Dimensions, TouchableOpacity, SafeAreaView } from 'react-native'
 import { addSpot, search } from '../API/TracerAPI'
 import { connect } from 'react-redux'
 import MapView, {Marker} from 'react-native-maps'
 import Connection from './Connection'
 
+
+const WIDTH = Dimensions.get('window').width
+const HEIGHT = Dimensions.get('window').height
+
 class AddSpot extends React.Component{
     constructor(props){
         super(props)
 
-        this.marker = {latitude: this.props.locationStore.latitude, longitude: this.props.locationStore.longitude}
+        this.state = {
+            marker: {
+                latitude: this.props.locationStore.latitude, 
+                longitude: this.props.locationStore.longitude
+            }
+        }
 
         this.title = ""
         this.description = ""
         this.sport = 1
+
+        this.markerRef = React.createRef()
     }
 
     _addSpot(){
         //Checks if there's the title
         if(this.title != ""){
             //Adds the spot in the DB
-            addSpot(this.props.userInfos.token, this.title, this.sport, {latitude: this.marker.latitude, longitude: this.marker.longitude}, this.description)
+            addSpot(this.props.userInfos.token, this.title, this.sport, this.state.marker, this.description)
                 .then(response => {
                     //Checks if everything's good
                     if(response.Message == "Uploaded"){
                         //Goes back to the map & Search for new spots near the user
-                        this.props.navigation.goBack(null)
                         search(this.props.locationStore.longitude, this.props.locationStore.latitude).then(response => {
                             this.props.dispatch({type: "REFRESH_SPOTS", value: response.Spots})
                         }) 
+                        this.props.navigation.goBack(null)
                     }
                 })
         }
@@ -47,38 +58,56 @@ class AddSpot extends React.Component{
         this.sport = text
     }
 
+    _changeMarkerLocation(coords){
+        this.setState({marker: coords})
+    }
+
     _checkAuth(){
         //Checks if the user's logged
         if(this.props.userInfos.token != ""){
             return (
                 <View>
-                    <TextInput 
-                        placeholder="Titre"
-                        onChangeText={(text) => {this._changeTitle(text)}}
-                    />
-                    <TextInput placeholder="Description" 
-                        onChangeText={(text) => {this._changeDescription(text)}}
-                    />
-                    <TextInput placeholder="Sport" 
-                        onChangeText={(text) => {this._changeSport(text)}}
-                    />
-                    <MapView 
-                        style={styles.selectPlace}
-                        showsUserLocation={true}
-                        initialRegion={{latitude: this.props.locationStore.latitude, longitude: this.props.locationStore.longitude, longitudeDelta: 0.05, latitudeDelta: 0.05}}
-                    >
-                        <Marker 
-                            coordinate={{latitude: this.props.locationStore.latitude, longitude: this.props.locationStore.longitude}}
-                            draggable={true}
-                            title={"Place moi là où le spot est !"}
-                            onPress={e => {this.marker = e.nativeEvent.coordinate}}
+                    <SafeAreaView>
+                        <TextInput 
+                            placeholder="Titre (Obligatoire)"
+                            onChangeText={(text) => {this._changeTitle(text)}}
+                            style={styles.inputs}
+                        />
+                        <TextInput placeholder="Description (Optionnel)" 
+                            onChangeText={(text) => {this._changeDescription(text)}}
+                            style={styles.inputs}
+                        />
+                        <MapView 
+                            style={styles.selectPlace}
+                            showsUserLocation={true}
+                            userLocationCalloutEnabled={false}
+                            initialRegion={{latitude: this.props.locationStore.latitude, longitude: this.props.locationStore.longitude, longitudeDelta: 0.001, latitudeDelta: 0.001}}
+                            pitchEnabled={false}
+                            showsCompass={false}
+                            mapType={"hybrid"}
+                            showsPointsOfInterest={false}
+                            showsMyLocationButton={false}
+                            toolbarEnabled={false}
+                            onMapReady={() => {this.markerRef.showCallout()}}
                         >
+                            <Marker 
+                                ref={ref => {this.markerRef = ref}}
+                                coordinate={this.state.marker}
+                                draggable={true}
+                                title={"Place moi à l'endroit où est le spot !"}
+                                onDragEnd={(e) => {this.setState({marker: e.nativeEvent.coordinate})}}
+                                isPreselected={true}
+                            >
 
-                        </Marker>
-                    </MapView>
-                    <TouchableOpacity onPress={() => {this._addSpot()}}>
-                        <Text>Poster</Text>
-                    </TouchableOpacity>
+                            </Marker>
+                        </MapView>
+                        <TouchableOpacity 
+                            onPress={() => {this._addSpot()}}
+                            style={styles.sendButton}
+                        >
+                            <Text>Poster sur Tracer !</Text>
+                        </TouchableOpacity>
+                    </SafeAreaView>
                 </View>
             )
         } else {
@@ -102,8 +131,16 @@ class AddSpot extends React.Component{
 
 const styles = StyleSheet.create({
     selectPlace: {
-        width: 400,
+        width: WIDTH,
         height: 200
+    },
+    inputs: {
+        marginVertical: 10,
+    },
+    sendButton: {
+        justifyContent: "center",
+        alignItems: "center",
+        margin: 25,
     }
 })
 

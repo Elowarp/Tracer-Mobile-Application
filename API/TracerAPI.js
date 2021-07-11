@@ -1,4 +1,4 @@
-IP="http://172.20.10.4:8000/"
+IP="http://192.168.1.61:8000/"
 
 export async function login(username, password){
     const url = IP + 'api/public/obtainToken'
@@ -42,7 +42,7 @@ export async function register(username, password, email){
 }
 
 export async function search(longitude, latitude){
-    const url = IP + "api/public/search?longitude=" + longitude + "&latitude=" + latitude + "&distanceFromUser=" + 40000
+    const url = IP + "api/public/search?longitude=" + longitude + "&latitude=" + latitude + "&distanceFromUser=" + 50
 
     try {
         const response = await fetch(url, {

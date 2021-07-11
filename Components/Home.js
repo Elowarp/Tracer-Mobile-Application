@@ -32,18 +32,13 @@ class Home extends React.Component{
         */
         switch(number){
             case 0:
-                console.log("Go to Favorites")
+                console.log("Go to Map")
                 this.ScrollView.scrollTo({x: 0})
                 break
 
             case 1:
-                console.log("Go to Map")
-                this.ScrollView.scrollTo({x: WIDTH})
-                break
-
-            case 2:
                 console.log("Go to Messages")
-                this.ScrollView.scrollTo({x: WIDTH*2})
+                this.ScrollView.scrollTo({x: WIDTH})
                 break
 
             default:
@@ -68,14 +63,12 @@ class Home extends React.Component{
                 horizontal={true} 
                 showsHorizontalScrollIndicator={false}
                 pagingEnabled={true}
-                contentOffset={{x: WIDTH}}
                 bounces={false}
                 scrollEnabled={true}
-                style={styles.scrollView}   
+                contentOffset={{x: 0}}
+                style={styles.scrollView}  
+                loadingIndicatorColor={"#FFFFFF"} 
             >
-                <Favorites 
-                    goToPage={this.goToPage}
-                />
                 <Map 
                     goToPage={this.goToPage} location={this.props.location} navigation={this.props.navigation}
                 />

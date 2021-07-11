@@ -1,5 +1,5 @@
 import React from 'react'
-import {View, Text, StyleSheet, TouchableOpacity, TextInput} from 'react-native'
+import {View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView} from 'react-native'
 import {login, register} from '../API/TracerAPI'
 import {connect} from 'react-redux'
 
@@ -99,6 +99,7 @@ class Connection extends React.Component{
     render(){
         return(
             <View>
+                <ScrollView>
                     <View style={styles.connectionForm}>
                         <Text style={styles.text}>Connexion</Text>
                         <TextInput 
@@ -166,7 +167,8 @@ class Connection extends React.Component{
                             <Text style={styles.SignButton}>On s'inscrit !</Text>
                         </TouchableOpacity>
                     </View>
-                </View>
+                </ScrollView>
+            </View>
         )
     }
 }
